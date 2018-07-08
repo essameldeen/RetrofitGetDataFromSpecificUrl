@@ -12,8 +12,13 @@ import com.example.toshiba.retrofit.Adapter.AdapterForGitHubRepo;
 import com.example.toshiba.retrofit.service.gitHubClient;
 import com.example.toshiba.retrofit.service.gitHubRepo;
 
+import java.io.IOException;
 import java.util.List;
 
+import okhttp3.Interceptor;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.logging.HttpLoggingInterceptor;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -30,11 +35,35 @@ public class MainActivity extends AppCompatActivity {
         // list to show the data return from api
         final RecyclerView listView = (RecyclerView) findViewById(R.id.listView);
         listView.setLayoutManager(new LinearLayoutManager(this));
+        //
+        // create okHttp logging
+        OkHttpClient.Builder okHttpClient = new OkHttpClient.Builder();
+
+        // add headers for each request
+        okHttpClient.addInterceptor(new Interceptor() {
+            @Override
+            public okhttp3.Response intercept(Chain chain) throws IOException {
+                Request request = chain.request();
+                // add header in all request
+              Request.Builder  newRequest =  request.newBuilder().addHeader("Auzthorizan","annjada");
+
+
+                return chain.proceed(newRequest.build());
+            }
+        });
+
+        HttpLoggingInterceptor  loggingInterceptor= new HttpLoggingInterceptor();
+        loggingInterceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
+        if(BuildConfig.DEBUG){
+            okHttpClient.addInterceptor(loggingInterceptor);
+        }
+
 
         // create connection
         Retrofit.Builder builder = new Retrofit.Builder()
                 .baseUrl("https://api.github.com/")
-                .addConverterFactory(GsonConverterFactory.create());
+                .addConverterFactory(GsonConverterFactory.create())
+                .client(okHttpClient.build());
 
         Retrofit retrofit = builder.build();
         gitHubClient gitHubClient =  retrofit.create(gitHubClient.class);
